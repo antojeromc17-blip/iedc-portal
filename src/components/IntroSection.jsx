@@ -5,14 +5,11 @@ import ScrollText from './ScrollText';
 /**
  * IntroSection
  *
- * Orchestrates preloading, scroll tracking, and child updates.
- * The hot scroll → draw path uses refs only — no setState, no re-renders.
+ * Immersive 100vh full-screen cinematic intro experience (NO SCROLLBAR).
+ * Captures user wheel, trackpad, touch swipe, or arrow keys to scrub
+ * through the 180 frames.
  *
- * Props:
- *   framePath  – Base path to the frame folder (default: '/frames/')
- *   frameCount – Total number of frames (default: 30)
- *   height     – CSS height of the scroll container (default: '300vh')
- *   textBlocks – Optional array of { text, start, end } overrides for ScrollText
+ * ONLY AFTER the 180 frames complete does the page change to the Attendance Portal!
  */
 
 function padNumber(n, digits = 3) {
@@ -21,20 +18,23 @@ function padNumber(n, digits = 3) {
 
 export default function IntroSection({
   framePath = '/frames/',
-  frameCount = 30,
-  height = '300vh',
+  frameCount = 180,
   textBlocks,
+  onComplete,
 }) {
   const [frames, setFrames] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
 
-  const containerRef = useRef(null);
-  const canvasRef = useRef(null);   // imperative handle to ScrollFrameAnimation
-  const textRef = useRef(null);     // imperative handle to ScrollText
-  const tickingRef = useRef(false);
+  const canvasRef = useRef(null);
+  const textRef = useRef(null);
+  const progressRef = useRef(0);
+  const targetProgressRef = useRef(0);
+  const animFrameIdRef = useRef(null);
+  const touchStartY = useRef(0);
+  const isTransitioningRef = useRef(false);
 
-  // ---------- preload all frames ----------
+  // ---------- Preload all 180 frames ----------
   useEffect(() => {
     let cancelled = false;
     const images = [];
@@ -71,41 +71,96 @@ export default function IntroSection({
     return () => { cancelled = true; };
   }, [framePath, frameCount]);
 
-  // ---------- scroll tracking — direct imperative updates ----------
-  const handleScroll = useCallback(() => {
-    if (tickingRef.current) return;
-    tickingRef.current = true;
+  // ---------- Trigger Page Change to Portal ----------
+  const triggerTransition = useCallback(() => {
+    if (isTransitioningRef.current) return;
+    isTransitioningRef.current = true;
+    if (onComplete) {
+      onComplete();
+    }
+  }, [onComplete]);
 
-    requestAnimationFrame(() => {
-      const container = containerRef.current;
-      if (!container) {
-        tickingRef.current = false;
-        return;
+  // ---------- Smooth 60fps Lerp Animation Loop ----------
+  useEffect(() => {
+    if (!loaded) return;
+
+    const renderLoop = () => {
+      // Smooth lerp progress for silky frame transitions
+      const current = progressRef.current;
+      const target = targetProgressRef.current;
+      const next = current + (target - current) * 0.14;
+      progressRef.current = next;
+
+      if (canvasRef.current) canvasRef.current.draw(next);
+      if (textRef.current) textRef.current.update(next);
+
+      // ONLY after all 180 frames finish (progress >= 0.97) -> change page!
+      if (next >= 0.97 && !isTransitioningRef.current) {
+        triggerTransition();
       }
 
-      const rect = container.getBoundingClientRect();
-      const containerHeight = container.offsetHeight;
-      const viewportH = window.innerHeight;
+      animFrameIdRef.current = requestAnimationFrame(renderLoop);
+    };
 
-      const scrolled = -rect.top;
-      const total = containerHeight - viewportH;
-      const p = Math.max(0, Math.min(1, scrolled / total));
+    animFrameIdRef.current = requestAnimationFrame(renderLoop);
 
-      // Directly call imperative methods — NO setState, NO re-render
-      if (canvasRef.current) canvasRef.current.draw(p);
-      if (textRef.current) textRef.current.update(p);
+    return () => {
+      if (animFrameIdRef.current) {
+        cancelAnimationFrame(animFrameIdRef.current);
+      }
+    };
+  }, [loaded, triggerTransition]);
 
-      tickingRef.current = false;
-    });
-  }, []);
-
+  // ---------- Wheel & Touch Event Handlers (No Side Scrollbar) ----------
   useEffect(() => {
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // initial position
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
+    if (!loaded) return;
 
-  // ---------- loading screen ----------
+    const handleWheel = (e) => {
+      e.preventDefault();
+      // Smooth delta calculation
+      const delta = (e.deltaY || e.detail || 0) * 0.00065;
+      const nextTarget = Math.max(0, Math.min(1.0, targetProgressRef.current + delta));
+      targetProgressRef.current = nextTarget;
+    };
+
+    const handleTouchStart = (e) => {
+      touchStartY.current = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = (e) => {
+      e.preventDefault();
+      const currentY = e.touches[0].clientY;
+      const deltaY = touchStartY.current - currentY;
+      touchStartY.current = currentY;
+      const delta = deltaY * 0.002;
+      const nextTarget = Math.max(0, Math.min(1.0, targetProgressRef.current + delta));
+      targetProgressRef.current = nextTarget;
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault();
+        targetProgressRef.current = Math.min(1.0, targetProgressRef.current + 0.12);
+      } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+        e.preventDefault();
+        targetProgressRef.current = Math.max(0, targetProgressRef.current - 0.12);
+      }
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [loaded]);
+
+  // ---------- Preload loading indicator ----------
   if (!loaded) {
     return (
       <div className="intro-loader">
@@ -125,19 +180,36 @@ export default function IntroSection({
               {Math.round(loadProgress * 100)}%
             </span>
           </div>
-          <p className="loader-label">Loading experience…</p>
+          <p className="loader-label">Initializing IEDC Experience…</p>
         </div>
       </div>
     );
   }
 
-  // ---------- main render (rendered once, never re-renders during scroll) ----------
   return (
-    <section ref={containerRef} className="intro-section" style={{ height }}>
-      <div className="intro-sticky-wrapper">
+    <div className="intro-fullscreen-view" id="intro-fullscreen-container">
+      {/* Top minimal brand + skip pill */}
+      <div className="intro-floating-bar">
+        <div className="intro-brand-pill">
+          <span className="brand-dot-pulse" />
+          <span className="brand-title">IEDC PORTAL</span>
+        </div>
+        <button
+          type="button"
+          className="intro-skip-pill"
+          onClick={triggerTransition}
+          title="Skip intro and change to portal page"
+        >
+          <span>Skip to Portal</span>
+          <span className="skip-arrow">→</span>
+        </button>
+      </div>
+
+      {/* Pristine 180-frame canvas & text overlay */}
+      <div className="intro-canvas-frame">
         <ScrollFrameAnimation ref={canvasRef} frames={frames} />
         <ScrollText ref={textRef} blocks={textBlocks} />
       </div>
-    </section>
+    </div>
   );
 }
