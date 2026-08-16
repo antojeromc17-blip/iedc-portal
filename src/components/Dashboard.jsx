@@ -1,14 +1,9 @@
 import { useState, useMemo } from 'react';
 import PersonCard from './PersonCard';
 
-/**
- * Dashboard Component
- *
- * Clean member grid with search, role filters, and status toggles.
- */
 export default function Dashboard({ people, onToggleCheckIn }) {
-  const [filterStatus, setFilterStatus] = useState('ALL'); // 'ALL' | 'CHECKED_IN' | 'CHECKED_OUT'
-  const [filterRole, setFilterRole] = useState('ALL'); // 'ALL' | 'LEAD' | 'MEMBER'
+  const [filterStatus, setFilterStatus] = useState('ALL');
+  const [filterRole, setFilterRole] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredPeople = useMemo(() => {
@@ -33,128 +28,106 @@ export default function Dashboard({ people, onToggleCheckIn }) {
   }, [people, searchQuery, filterStatus, filterRole]);
 
   const checkedInCount = people.filter((p) => p.user).length;
-  const checkedOutCount = people.length - checkedInCount;
 
   return (
-    <section className="dashboard-section" aria-label="Member Attendance Dashboard">
-      {/* Search & Filter Toolbar */}
-      <div className="toolbar-row">
-        <div className="search-field">
-          <svg className="search-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search by name, role, or position…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-text-input"
-            id="person-search-input"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              className="clear-btn"
-              onClick={() => setSearchQuery('')}
-              aria-label="Clear search"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          )}
-        </div>
+    <div className="flex-grow w-full">
+      {/* Header & Metrics */}
+      <header className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8 hidden">
+        {/* We moved the title part to App.jsx for layout simplicity, but keeping metrics here */}
+      </header>
 
-        {/* Filter Chips */}
-        <div className="filter-toolbar">
-          <div className="chip-group" role="group" aria-label="Filter by Status">
-            <button
-              type="button"
-              className={`chip-btn ${filterStatus === 'ALL' ? 'is-selected' : ''}`}
-              onClick={() => setFilterStatus('ALL')}
-            >
-              All ({people.length})
-            </button>
-            <button
-              type="button"
-              className={`chip-btn ${filterStatus === 'CHECKED_IN' ? 'is-selected is-emerald' : ''}`}
-              onClick={() => setFilterStatus('CHECKED_IN')}
-            >
-              In Lab ({checkedInCount})
-            </button>
-            <button
-              type="button"
-              className={`chip-btn ${filterStatus === 'CHECKED_OUT' ? 'is-selected' : ''}`}
-              onClick={() => setFilterStatus('CHECKED_OUT')}
-            >
-              Out ({checkedOutCount})
-            </button>
+      <div className="flex gap-8 items-end mb-12">
+        <div className="glass-container rounded-2xl p-6 min-w-[200px]">
+          <p className="font-label-mono text-label-mono text-secondary-fixed mb-2 uppercase tracking-widest">Active Members</p>
+          <div className="font-display-lg text-display-lg text-white flex items-baseline gap-2">
+            {checkedInCount}
+            {checkedInCount > 0 && (
+              <span className="pulse-indicator w-3 h-3 bg-secondary-fixed rounded-full inline-block ml-2 shadow-[0_0_10px_#63f7ff]"></span>
+            )}
           </div>
-
-          <div className="chip-divider" />
-
-          <div className="chip-group" role="group" aria-label="Filter by Role">
-            <button
-              type="button"
-              className={`chip-btn ${filterRole === 'ALL' ? 'is-selected' : ''}`}
-              onClick={() => setFilterRole('ALL')}
-            >
-              All Roles
-            </button>
-            <button
-              type="button"
-              className={`chip-btn ${filterRole === 'LEAD' ? 'is-selected' : ''}`}
-              onClick={() => setFilterRole('LEAD')}
-            >
-              Leads
-            </button>
-            <button
-              type="button"
-              className={`chip-btn ${filterRole === 'MEMBER' ? 'is-selected' : ''}`}
-              onClick={() => setFilterRole('MEMBER')}
-            >
-              Members
-            </button>
+        </div>
+        <div className="glass-container rounded-2xl p-6 min-w-[200px] hidden md:block">
+          <p className="font-label-mono text-label-mono text-primary-fixed-dim mb-2 uppercase tracking-widest">Total Members</p>
+          <div className="font-display-lg text-display-lg text-white">
+            {people.length}
           </div>
         </div>
       </div>
 
-      {/* Grid of Person Cards */}
-      {filteredPeople.length > 0 ? (
-        <div className="cards-grid">
-          {filteredPeople.map((person) => (
-            <PersonCard
-              key={person.id}
-              person={person}
-              onToggleCheckIn={onToggleCheckIn}
-            />
-          ))}
+      {/* Search & Filter Glass Bar */}
+      <div className="glass-container rounded-2xl p-4 mb-12 flex flex-col md:flex-row gap-4 items-center caustic-bg">
+        <div className="relative w-full md:flex-1">
+          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+          <input 
+            className="w-full bg-surface-dim/50 border-b border-white/20 focus:border-secondary-fixed text-white font-body-lg px-12 py-4 rounded-xl outline-none transition-all focus:bg-surface-dim/80" 
+            placeholder="Search members by name, role, or NFC ID..." 
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
-      ) : (
-        <div className="empty-panel">
-          <div className="empty-symbol">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </div>
-          <h4 className="empty-heading">No matching members found</h4>
-          <p className="empty-subtext">Try changing your search keywords or clear current filters.</p>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => {
-              setSearchQuery('');
-              setFilterStatus('ALL');
-              setFilterRole('ALL');
-            }}
+        <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+          <button 
+            className={`px-6 py-3 rounded-full font-label-mono text-label-mono whitespace-nowrap transition-colors ${filterRole === 'ALL' ? 'border border-secondary-fixed bg-secondary-fixed/10 text-secondary-fixed' : 'border border-white/20 hover:border-white/40 text-on-surface-variant'}`}
+            onClick={() => setFilterRole('ALL')}
           >
-            Clear Filters
+            All Roles
+          </button>
+          <button 
+            className={`px-6 py-3 rounded-full font-label-mono text-label-mono whitespace-nowrap transition-colors ${filterRole === 'MEMBER' ? 'border border-secondary-fixed bg-secondary-fixed/10 text-secondary-fixed' : 'border border-white/20 hover:border-white/40 text-on-surface-variant'}`}
+            onClick={() => setFilterRole('MEMBER')}
+          >
+            Makers
+          </button>
+          <button 
+            className={`px-6 py-3 rounded-full font-label-mono text-label-mono whitespace-nowrap transition-colors ${filterRole === 'LEAD' ? 'border border-secondary-fixed bg-secondary-fixed/10 text-secondary-fixed' : 'border border-white/20 hover:border-white/40 text-on-surface-variant'}`}
+            onClick={() => setFilterRole('LEAD')}
+          >
+            Leads
           </button>
         </div>
-      )}
-    </section>
+      </div>
+
+      {/* Live Presence Grid */}
+      <section>
+        <div className="flex items-center justify-between mb-8 border-b border-white/10 pb-4">
+          <h3 className="font-headline-xl text-[28px] text-on-surface font-bold">Live Presence</h3>
+          <div className="flex items-center gap-2 text-secondary-fixed font-label-mono text-label-mono bg-secondary-fixed/10 px-4 py-2 rounded-full">
+            <span className="material-symbols-outlined text-sm">sync</span> Syncing...
+          </div>
+        </div>
+
+        {filteredPeople.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredPeople.map((person, i) => (
+              <PersonCard
+                key={person.id}
+                person={person}
+                onToggleCheckIn={onToggleCheckIn}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 text-center glass-container rounded-2xl">
+            <span className="material-symbols-outlined text-[48px] text-outline-variant mb-4">search_off</span>
+            <h4 className="font-headline-xl text-[24px] text-on-surface mb-2">No matching members found</h4>
+            <p className="font-body-md text-on-surface-variant max-w-sm mb-6">
+              Try changing your search keywords or clear current filters.
+            </p>
+            <button
+              type="button"
+              className="px-6 py-3 rounded-xl border border-white/20 text-on-surface font-label-mono hover:bg-white/5 transition-colors"
+              onClick={() => {
+                setSearchQuery('');
+                setFilterStatus('ALL');
+                setFilterRole('ALL');
+              }}
+            >
+              Clear Filters
+            </button>
+          </div>
+        )}
+      </section>
+    </div>
   );
 }

@@ -1,13 +1,6 @@
 import { useState, useEffect } from 'react';
-import { formatTimer, formatFriendlyDuration, formatTime, formatDate } from '../utils/formatters';
+import { formatTimer, formatFriendlyDuration, formatTime } from '../utils/formatters';
 
-/**
- * PersonCard Component
- *
- * Clean, modern, high-contrast member card.
- * Shows photo, name, specific role badge, check-in status,
- * live timer (HH:MM:SS), timestamp details, and NFC toggle action.
- */
 export default function PersonCard({ person, onToggleCheckIn }) {
   const isCheckedIn = Boolean(person.user);
   const [elapsedSeconds, setElapsedSeconds] = useState(() => {
@@ -17,7 +10,6 @@ export default function PersonCard({ person, onToggleCheckIn }) {
     return 0;
   });
 
-  // Live timer interval: updates every second when checked in
   useEffect(() => {
     if (!isCheckedIn || !person.checkInTime) {
       setElapsedSeconds(0);
@@ -36,109 +28,80 @@ export default function PersonCard({ person, onToggleCheckIn }) {
   }, [isCheckedIn, person.checkInTime]);
 
   const isLead = person.role === 'Lead';
-  const roleTitle = isLead ? (person.leadPosition || 'Team Lead') : 'Lab Member';
+  const roleTitle = isLead ? (person.leadPosition || 'Lead Engineer') : 'Maker';
 
   return (
     <div
-      className={`member-card ${isCheckedIn ? 'status-active' : 'status-idle'} ${isLead ? 'is-lead' : 'is-member'}`}
-      id={`person-card-${person.id}`}
+      className={`glass-container rounded-2xl p-6 flex flex-col gap-4 group transition-all duration-300 relative overflow-hidden ${
+        isCheckedIn ? 'hover:-translate-y-2' : 'opacity-60 hover:opacity-100'
+      }`}
     >
-      {/* Top Header: Identity & Badges */}
-      <div className="card-top">
-        <div className="avatar-frame">
-          <img
+      <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-secondary-fixed to-primary-container transition-opacity ${
+        isCheckedIn ? 'opacity-50 group-hover:opacity-100' : 'opacity-0'
+      }`}></div>
+      
+      <div className="flex justify-between items-start">
+        {person.image ? (
+          <img 
+            className={`w-16 h-16 rounded-full object-cover border-2 border-surface ${!isCheckedIn && 'grayscale'}`} 
+            alt={person.name} 
             src={person.image}
-            alt={person.name}
-            className="avatar-img"
-            loading="lazy"
           />
-          <span
-            className={`beacon-dot ${isCheckedIn ? 'beacon-online' : 'beacon-offline'}`}
-            title={isCheckedIn ? 'Present in lab' : 'Checked out'}
-          />
-        </div>
-
-        <div className="identity-block">
-          <div className="name-row">
-            <h3 className="name-text">{person.name}</h3>
-          </div>
-
-          <div className="tags-row">
-            <span className={`role-tag ${isLead ? 'tag-lead' : 'tag-member'}`}>
-              {isLead && (
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                </svg>
-              )}
-              {roleTitle}
-            </span>
-
-            <span className={`state-badge ${isCheckedIn ? 'state-in' : 'state-out'}`}>
-              <span className="state-dot" />
-              {isCheckedIn ? 'Checked In' : 'Checked Out'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Middle Body: Timer / Status Section */}
-      <div className="card-body">
-        {isCheckedIn ? (
-          <div className="session-panel session-live">
-            <div className="session-panel-header">
-              <span className="session-tag">Active Session</span>
-              <span className="session-start">Since {formatTime(person.checkInTime)}</span>
-            </div>
-            <div className="timer-value" aria-label="Session Timer">
-              {formatTimer(elapsedSeconds)}
-            </div>
-            <div className="session-date-row">
-              <span>Date: {person.checkInDate || formatDate(person.checkInTime)}</span>
-            </div>
-          </div>
         ) : (
-          <div className="session-panel session-idle">
-            <div className="idle-content">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-              </svg>
-              <span>Ready for NFC Scan</span>
-            </div>
-            <div className="last-seen-text">
-              {person.checkOutTime ? (
-                <span>Last out: {formatDate(person.checkOutTime)} at {formatTime(person.checkOutTime)}</span>
-              ) : (
-                <span>No prior session today</span>
-              )}
-            </div>
+          <div className="w-16 h-16 rounded-full bg-surface-variant flex items-center justify-center font-headline-xl text-[20px] text-on-surface border-2 border-surface">
+            {person.name.charAt(0)}
           </div>
         )}
-
-        {/* All-time duration metric */}
-        <div className="accumulated-time-row">
-          <span className="acc-label">All-Time Total</span>
-          <span className="acc-value">
-            {formatFriendlyDuration(person.totalDuration + (isCheckedIn ? elapsedSeconds : 0))}
+        
+        <div className="bg-surface-dim/80 px-3 py-1 rounded-full border border-white/10 flex items-center gap-2">
+          {isCheckedIn ? (
+            <span className="pulse-indicator w-2 h-2 bg-secondary-fixed rounded-full inline-block"></span>
+          ) : (
+            <span className="w-2 h-2 bg-outline rounded-full inline-block"></span>
+          )}
+          <span className={`font-label-mono text-label-mono ${isCheckedIn ? 'text-secondary-fixed' : 'text-outline'}`}>
+            {isCheckedIn ? 'Live' : 'Away'}
           </span>
         </div>
       </div>
-
-      {/* Card Action Button */}
-      <div className="card-action">
-        <button
-          type="button"
-          className={`nfc-btn ${isCheckedIn ? 'nfc-btn-checkout' : 'nfc-btn-checkin'}`}
-          onClick={() => onToggleCheckIn(person.id)}
-          aria-label={isCheckedIn ? `Check out ${person.name}` : `Check in ${person.name}`}
-          id={`toggle-btn-${person.id}`}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 11a9 9 0 0 1 9 9" />
-            <path d="M4 4a16 16 0 0 1 16 16" />
-            <circle cx="5" cy="19" r="1" />
-          </svg>
-          <span>{isCheckedIn ? 'Tap NFC / Check Out' : 'Tap NFC / Check In'}</span>
-        </button>
+      
+      <div>
+        <h4 className="font-headline-xl text-xl text-on-surface mb-1 truncate">{person.name}</h4>
+        <p className={`font-label-mono text-label-mono uppercase tracking-wider ${isCheckedIn ? (isLead ? 'text-primary-fixed-dim' : 'text-on-surface-variant') : 'text-outline'}`}>
+          {roleTitle}
+        </p>
+      </div>
+      
+      <div className="mt-auto pt-4 border-t border-white/10 flex justify-between items-center text-on-surface-variant h-[40px]">
+        {isCheckedIn ? (
+          <>
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-sm">schedule</span>
+              <span className="font-label-mono text-label-mono">{formatTimer(elapsedSeconds)}</span>
+            </div>
+            <span 
+              className="material-symbols-outlined text-secondary-fixed opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              onClick={() => onToggleCheckIn(person.id)}
+            >
+              logout
+            </span>
+          </>
+        ) : (
+          <div className="flex justify-between items-center w-full">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-sm">logout</span>
+              <span className="font-label-mono text-label-mono">
+                {person.checkOutTime ? `Last seen ${formatTime(person.checkOutTime)}` : 'No sessions'}
+              </span>
+            </div>
+            <span 
+              className="material-symbols-outlined text-outline hover:text-secondary-fixed transition-colors cursor-pointer"
+              onClick={() => onToggleCheckIn(person.id)}
+            >
+              login
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

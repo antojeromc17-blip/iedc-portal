@@ -17,7 +17,10 @@ A smart, real-time lab attendance and session tracking platform designed for the
 ## ✨ Features
 
 - **Cinematic Canvas Intro Experience**: High-performance 180-frame scroll animation with imperative rAF frame blending and smooth typography overlays.
-- **Dedicated Page Navigation**: Distinct separation between the cinematic landing experience and the full-featured attendance tracking portal.
+- **Dedicated Page Navigation**: Distinct separation between the cinematic landing experience and the full-featured attendance tracking portal via a responsive Sidebar (`SideNav`).
+- **Member Directory & Registration**:
+  - Comprehensive ledger of all active members, leads, and faculty.
+  - Interactive "New Entry" modal for instantaneous, on-the-fly registration.
 - **Live Attendance Dashboard**:
   - Grid of team members and leads with avatars and presence beacons.
   - **Distinct Role Badging**: Gold/purple gradient badges for Leads (with specific titles like *President*, *Tech Lead*, *Design Lead*, *Vice President*) and teal badges for Members.
@@ -47,17 +50,19 @@ iedc-portal/
 │   │   ├── IntroSection.jsx           # Canvas scroll orchestrator & landing view
 │   │   ├── ScrollFrameAnimation.jsx   # Imperative 2D canvas frame blender
 │   │   ├── ScrollText.jsx             # Text overlay transitions
-│   │   ├── PortalHeader.jsx           # Stats banner & tab switcher
+│   │   ├── SideNav.jsx                # Sidebar navigation & state switcher
 │   │   ├── Dashboard.jsx              # Member grid with filters & search
+│   │   ├── MemberDirectory.jsx        # Complete personnel list view
 │   │   ├── PersonCard.jsx             # Individual card with live timer & NFC button
 │   │   ├── HistoryView.jsx            # Session history table & CSV export
+│   │   ├── AddMemberModal.jsx         # Registration form for new members
 │   │   └── NfcSimulatorModal.jsx      # Interactive RFID hardware simulator
 │   ├── data/
 │   │   └── people.js                  # Initial mock dataset & history schema
 │   ├── utils/
 │   │   └── formatters.js              # Time, date, and duration formatting utilities
 │   ├── App.jsx                        # Page routing & global state management
-│   ├── index.css                      # Modern dark interface design system
+│   ├── index.css                      # Tailwind v4 configuration & base styles
 │   └── main.jsx                       # React root mounting
 ├── index.html
 ├── package.json
@@ -131,7 +136,7 @@ npm run lint
 | [Vite 8](https://vitejs.dev) | Next-generation frontend tooling |
 | [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) | Smooth 60fps frame-blended scroll animation |
 | [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) | Synthesized audio feedback for NFC scans |
-| Vanilla CSS3 | Custom cyber-dark glassmorphism design system |
+| [Tailwind CSS v4](https://tailwindcss.com/) | Styling framework powering the Obsidian Kinetic UI |
 | [Oxlint](https://oxc.rs/docs/guide/usage/linter) | Fast static code analysis |
 
 ---
